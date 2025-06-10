@@ -93,10 +93,27 @@ int main( int argc, char* argv[] )
   // EXERCISE give-away: Use a RangePolicy.
   // using range_policy = Kokkos::RangePolicy<ExecSpace>;
 
+  #ifdef KOKKOS_ENABLE_CUDA
+  #define MemSpace Kokkos::CudaSpace
+  #endif
+  #ifdef KOKKOS_ENABLE_HIP
+  #define MemSpace Kokkos::Experimental::HIPSpace
+  #endif
+  #ifdef KOKKOS_ENABLE_OPENMPTARGET
+  #define MemSpace Kokkos::OpenMPTargetSpace
+  #endif
+
+  #ifndef MemSpace
+  #define MemSpace Kokkos::HostSpace
+  #endif
+
+  using ExecSpace = MemSpace::execution_space;
+  using range_policy = Kokkos::RangePolicy<ExecSpace>;
+
   // Allocate y, x vectors and Matrix A on device.
   // EXERCISE: Use MemSpace and Layout.
-  using ViewVectorType = Kokkos::View<double*>;
-  using ViewMatrixType = Kokkos::View<double**>;
+  using ViewVectorType = Kokkos::View<double*, Kokkos::LayoutRight, MemSpace>;
+  using ViewMatrixType = Kokkos::View<double**, Kokkos::LayoutRight, MemSpace>;
   ViewVectorType y( "y", N );
   ViewVectorType x( "x", M );
   ViewMatrixType A( "A", N, M );
@@ -137,7 +154,7 @@ int main( int argc, char* argv[] )
 
     // EXERCISE: Use Kokkos::RangePolicy<ExecSpace> to execute parallel_reduce
     //           in the correct space.
-    Kokkos::parallel_reduce( "yAx", N, KOKKOS_LAMBDA ( int j, double &update ) {
+    Kokkos::parallel_reduce( "yAx", range_policy( 0, N ), KOKKOS_LAMBDA ( int j, double &update ) {
       double temp2 = 0;
 
       for ( int i = 0; i < M; ++i ) {

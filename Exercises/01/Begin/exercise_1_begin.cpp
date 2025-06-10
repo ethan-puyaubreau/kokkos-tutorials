@@ -26,7 +26,7 @@
 
 // EXERCISE: Include Kokkos_Core.hpp.
 //           cmath library unnecessary after.
-// #include <Kokkos_Core.hpp>
+#include <Kokkos_Core.hpp>
 
 void checkSizes( int &N, int &M, int &S, int &nrepeat );
 
@@ -70,8 +70,8 @@ int main( int argc, char* argv[] )
 
   // EXERCISE: Initialize Kokkos runtime.
   //           Include braces to encapsulate code between initialize and finalize calls
-  // Kokkos::initialize( argc, argv );
-  // {
+  Kokkos::initialize( argc, argv );
+  {
 
   // For the sake of simplicity in this exercise, we're using std::malloc directly, but
   // later on we'll learn a better way, so generally don't do this in Kokkos programs.
@@ -85,23 +85,38 @@ int main( int argc, char* argv[] )
 
   // Initialize y vector.
   // EXERCISE: Convert outer loop to Kokkos::parallel_for.
-  for ( int i = 0; i < N; ++i ) {
+  Kokkos::parallel_for( "Initialize y", N, KOKKOS_LAMBDA( int i ) {
     y[ i ] = 1;
-  }
+  });
 
   // Initialize x vector.
   // EXERCISE: Convert outer loop to Kokkos::parallel_for.
-  for ( int i = 0; i < M; ++i ) {
+  Kokkos::parallel_for( "Initialize x", M, KOKKOS_LAMBDA( int i ) {
     x[ i ] = 1;
-  }
+  });
 
   // Initialize A matrix, note 2D indexing computation.
   // EXERCISE: Convert outer loop to Kokkos::parallel_for.
-  for ( int j = 0; j < N; ++j ) {
-    for ( int i = 0; i < M; ++i ) {
-      A[ j * M + i ] = 1;
+  //for ( int j = 0; j < N; ++j ) {
+  //  for ( int i = 0; i < M; ++i ) {
+  //    A[ j * M + i ] = 1;
+  //  }
+  //}
+
+  struct MatrixFunctor {
+    double* A;
+    const int64_t M;
+    MatrixFunctor(double* A, int64_t M) : A(A), M(M) {}
+
+    void operator()(const int64_t j) const {
+      for ( int i = 0; i < M; ++i ) {
+        A[ j * M + i ] = 1;
+      }
     }
-  }
+  };
+
+  MatrixFunctor matrixFunctor(A, M);
+  Kokkos::parallel_for( "Initialize A", N, matrixFunctor );
 
   // Timer products.
   //Kokkos::Timer timer;
@@ -112,15 +127,25 @@ int main( int argc, char* argv[] )
     double result = 0;
 
     // EXERCISE: Convert outer loop to Kokkos::parallel_reduce.
-    for ( int j = 0; j < N; ++j ) {
+    /*for ( int j = 0; j < N; ++j ) {
       double temp2 = 0;
 
       for ( int i = 0; i < M; ++i ) {
         temp2 += A[ j * M + i ] * x[ i ];
       }
 
-      result += y[ j ] * temp2;
-    }
+     result += y[ j ] * temp2;
+    }*/
+
+    Kokkos::parallel_reduce( "Compute result", N, KOKKOS_LAMBDA( int j, double &temp_result ) {
+      double temp2 = 0;
+
+      for ( int i = 0; i < M; ++i ) {
+        temp2 += A[ j * M + i ] * x[ i ];
+      }
+
+      temp_result += y[ j ] * temp2;
+    }, result );
 
     // Output result.
     if ( repeat == ( nrepeat - 1 ) ) {
@@ -157,8 +182,8 @@ int main( int argc, char* argv[] )
   std::free(x);
 
   // EXERCISE: finalize Kokkos runtime
-  // }
-  // Kokkos::finalize();
+  }
+  Kokkos::finalize();
 
   return 0;
 }

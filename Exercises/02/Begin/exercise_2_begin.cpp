@@ -77,38 +77,49 @@ int main( int argc, char* argv[] )
   // EXERCISE: Create views of the right size.
 
   // 1. Device Views
-  // using ViewVectorType = Kokkos::View<double*, Kokkos::SharedSpace>;
-  // using ViewMatrixType = Kokkos::View<double**, Kokkos::SharedSpace>;
-  // ViewVectorType y( "y", N );
-  // ViewVectorType x( "x", M );
-  // ViewMatrixType A( "A", N, M );
+  using ViewVectorType = Kokkos::View<double*, Kokkos::SharedSpace>;
+  using ViewMatrixType = Kokkos::View<double**, Kokkos::SharedSpace>;
+  ViewVectorType y( "y", N );
+  ViewVectorType x( "x", M );
+  ViewMatrixType A( "A", N, M );
 
   // EXERCISE: This no longer needs allocation after views introduced...
   //   Hint: If arrays are not allocated, they also do not need to be deallocated below
   // Allocate y, x vectors and Matrix A:
-  double * const y = new double[ N ];
-  double * const x = new double[ M ];
-  double * const A = new double[ N * M ];
+  //double * const y = new double[ N ];
+  //double * const x = new double[ M ];
+  //double * const A = new double[ N * M ];
 
   // Initialize y vector on host.
   // EXERCISE: Convert y to 1D View's member access API: y(i)
-  for ( int i = 0; i < N; ++i ) {
+  /*for ( int i = 0; i < N; ++i ) {
     y[ i ] = 1;
-  }
+  }*/
+  Kokkos::parallel_for( "Initialize y", N, KOKKOS_LAMBDA( int i ) {
+    y( i ) = 1;  // EXERCISE: Use view access operator
+  });
 
   // Initialize x vector on host.
   // EXERCISE: Convert x to 1D View's member access API: x(i)
-  for ( int i = 0; i < M; ++i ) {
+  /*for ( int i = 0; i < M; ++i ) {
     x[ i ] = 1;
-  }
+  }*/
+  Kokkos::parallel_for( "Initialize x", M, KOKKOS_LAMBDA( int i ) {
+    x( i ) = 1;  // EXERCISE: Use view access operator
+  });
 
   // Initialize A matrix on host, note 2D indexing computation.
   // EXERCISE: convert 'A' to use View's member access API: A(j,i)
-  for ( int j = 0; j < N; ++j ) {
+  /*for ( int j = 0; j < N; ++j ) {
     for ( int i = 0; i < M; ++i ) {
       A[ j * M + i ] = 1;
     }
-  }
+  }*/
+  Kokkos::parallel_for( "Initialize A", N, KOKKOS_LAMBDA( int j ) {
+    for ( int i = 0; i < M; ++i ) {
+      A( j, i ) = 1;  // EXERCISE: Use view access operator
+    }
+  });
 
   // Timer products.
   Kokkos::Timer timer;
@@ -122,10 +133,10 @@ int main( int argc, char* argv[] )
 
       // EXERCISE: Replace access with view access operators.
       for ( int i = 0; i < M; ++i ) {
-        temp2 += A[ j * M + i ] * x[ i ];
+        temp2 += A( j, i ) * x( i );
       }
 
-      update += y[ j ] * temp2;
+      update += y( j ) * temp2;  // EXERCISE: Use view access operator
     }, result );
 
     // Output result.
@@ -154,9 +165,9 @@ int main( int argc, char* argv[] )
   printf( "  N( %d ) M( %d ) nrepeat ( %d ) problem( %g MB ) time( %g s ) bandwidth( %g GB/s )\n",
           N, M, nrepeat, Gbytes * 1000, time, Gbytes * nrepeat / time );
 
-  delete [] y;  //EXERCISE hint: ...
+  /*delete [] y;  //EXERCISE hint: ...
   delete [] x;  //EXERCISE hint: ...
-  delete [] A;  //EXERCISE hint: ...
+  delete [] A;  //EXERCISE hint: ...*/
 
   }
   Kokkos::finalize();

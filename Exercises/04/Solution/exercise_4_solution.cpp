@@ -84,8 +84,8 @@ int main( int argc, char* argv[] )
   using range_policy = Kokkos::RangePolicy<ExecSpace>;
 
   // Allocate y, x vectors and Matrix A on device.
-  using ViewVectorType = Kokkos::View<double*, Kokkos::LayoutLeft, MemSpace>;
-  using ViewMatrixType = Kokkos::View<double**, Kokkos::LayoutLeft, MemSpace>;
+  using ViewVectorType = Kokkos::View<double*, Kokkos::LayoutRight, MemSpace>;
+  using ViewMatrixType = Kokkos::View<double**, Kokkos::LayoutRight, MemSpace>;
   ViewVectorType y( "y", N );
   ViewVectorType x( "x", M );
   ViewMatrixType A( "A", N, M );
