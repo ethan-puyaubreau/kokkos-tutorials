@@ -5,7 +5,6 @@ import glob
 from collections import defaultdict
 
 def parse_logs(pattern):
-    """Parse tous les fichiers correspondant au pattern et retourne un dict N -> [BW, ...]"""
     data = defaultdict(list)
     for fname in glob.glob(pattern):
         with open(fname) as f:
@@ -21,7 +20,6 @@ def parse_logs(pattern):
     return data
 
 def average_data(data):
-    """Retourne deux listes triées : N, BWmoy"""
     N = sorted(data.keys())
     BW = [np.mean(data[n]) for n in N]
     return np.array(N), np.array(BW)
@@ -52,8 +50,8 @@ for key, pattern in patterns.items():
 plt.xscale('log')
 plt.xlabel('N (Number of Rows)')
 plt.ylabel('Bandwidth (GB/s)')
-plt.title('Bandwidth vs N (moyenne sur séries)')
+plt.title('Bandwidth vs N for Different Layouts')
 plt.legend()
 plt.grid(True, which='both', ls=':')
 plt.tight_layout()
-plt.savefig('bandwidth_vs_n.png', dpi=300)
+plt.savefig('bandwidth_vs_n.png', dpi=500)
